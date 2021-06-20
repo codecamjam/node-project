@@ -1,6 +1,6 @@
 const dotenv = require('dotenv');
 //read vars from file and save them into nodejs env vars
-dotenv.config({ path: './config.env' });
+dotenv.config({ path: './config.env' }); //eslint-disable
 
 const app = require('./app');
 

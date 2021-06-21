@@ -34,11 +34,27 @@ const tourSchema = new mongoose.Schema({
   },
   price: {
     type: String,
-    required: [false, 'A tour must have a price']
+    required: [true, 'A tour must have a price']
   }
 });
 
 const Tour = mongoose.model('Tour', tourSchema);
+
+//create a new document
+const testTour = new Tour({
+  name: 'The Park Camper',
+  price: 997
+});
+
+//saves doc to the db (returns a promise)
+testTour
+  .save()
+  .then(doc => {
+    console.log(doc);
+  })
+  .catch(err => {
+    console.log('ERROR 💥', err);
+  });
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {

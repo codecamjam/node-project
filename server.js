@@ -1,6 +1,24 @@
+const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-//read vars from file and save them into nodejs env vars
+
 dotenv.config({ path: './config.env' }); //eslint-disable
+
+const DB = process.env.DATABASE.replace(
+  '<PASSWORD>',
+  process.env.DATABASE_PASSWORD
+);
+
+mongoose
+  .connect(DB, {
+    useNewUrlParser: true,
+    useCreateIndex: true,
+    useFindAndModify: false,
+    useUnifiedTopology: true
+  })
+  .then(() => {
+    // console.log(con.connections);
+    console.log('DB connection successful');
+  });
 
 const app = require('./app');
 

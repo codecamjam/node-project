@@ -8,6 +8,8 @@ const DB = process.env.DATABASE.replace(
   process.env.DATABASE_PASSWORD
 );
 
+const app = require('./app');
+
 mongoose
   .connect(DB, {
     useNewUrlParser: true,
@@ -20,7 +22,23 @@ mongoose
     console.log('DB connection successful');
   });
 
-const app = require('./app');
+const tourSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, 'A tour must have a name'], //validator
+    unique: true //cant have 2 tour docs with the same name
+  },
+  rating: {
+    type: Number,
+    default: 4.5
+  },
+  price: {
+    type: String,
+    required: [false, 'A tour must have a price']
+  }
+});
+
+const Tour = mongoose.model('Tour', tourSchema);
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {

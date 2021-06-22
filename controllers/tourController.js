@@ -12,58 +12,6 @@ exports.aliasTopTours = async (req, res, next) => {
 exports.getAllTours = async (req, res) => {
   try {
     console.log(req.query);
-
-    //BUILD QUERY
-    //1a) filtering
-    // const queryObj = { ...req.query };
-    // const excludedFields = [
-    //   'page',
-    //   'sort',
-    //   'limit',
-    //   'fields'
-    // ];
-    // excludedFields.forEach(el => delete queryObj[el]);
-
-    // //1b) adv filtering
-    // let queryStr = JSON.stringify(queryObj);
-    // queryStr = queryStr.replace(
-    //   /\b(gte|gt|lte|lt)\b/g,
-    //   match => `$${match}`
-    // );
-
-    // //remember find returns a query, so we can chain bunch more queries
-    // let query = Tour.find(JSON.parse(queryStr));
-
-    //2)sorting
-    // if (req.query.sort) {
-    //   const sortBy = req.query.sort.split(',').join(' ');
-    //   query = query.sort(sortBy);
-    // } else {
-    //   query = query.sort('-createdAt');
-    // }
-
-    //3)field limiting aka projecting
-    // if (req.query.fields) {
-    //   const fields = req.query.fields.split(',').join(' ');
-    //   query = query.select(fields);
-    // } else {
-    //   query = query.select('-__v');
-    // }
-
-    //4)pagination
-    // const page = req.query.page * 1 || 1;
-    // const limit = req.query.limit * 1 || 100;
-    // const skip = (page - 1) * limit;
-
-    // query = query.skip(skip).limit(limit);
-
-    // if (req.query.page) {
-    //   const numTours = await Tour.countDocuments();
-    //   if (skip >= numTours)
-    //     throw new Error('This page does not exist');
-    // }
-
-    //EXECUTE QUERY
     const features = new APIFeatures(Tour.find(), req.query)
       .filter()
       .sort()
@@ -72,9 +20,6 @@ exports.getAllTours = async (req, res) => {
 
     const tours = await features.query;
 
-    //query.sort().select().skip().limit() possible query chain
-
-    //SEND RESPONSE
     res.status(200).json({
       status: 'success',
       results: tours.length,
@@ -93,7 +38,7 @@ exports.getAllTours = async (req, res) => {
 exports.getTour = async (req, res) => {
   try {
     const tour = await Tour.findById(req.params.id);
-    //Tour.findOne({_id: req.params.id})
+
     res.status(200).json({
       status: 'success',
       data: {
@@ -158,6 +103,55 @@ exports.deleteTour = async (req, res) => {
     res.status(204).json({
       status: 'success',
       data: null
+    });
+  } catch (err) {
+    res.status(404).json({
+      status: 'fail',
+      message: err
+    });
+  }
+};
+
+exports.getTourStats = async (req, res) => {
+  try {
+    const stats = await Tour.aggregate([
+      {
+        $match: { ratingsAverage: { $gte: 4.5 } }
+      },
+      {
+        $group: {
+          //we want everything in one group to calc
+          //stats for all tours (and not separated by group)
+          //thats why we set id to null
+          // _id: null,
+          // _id: '$ratingsAverage',
+          _id: { $toUpper: '$difficulty' },
+          numTours: { $sum: 1 }, //increments on reading each document
+          numRatings: { $sum: '$ratingsQuantity' },
+          avgRating: { $avg: '$ratingsAverage' },
+          avgPrice: { $avg: '$price' },
+          minPrice: { $min: '$price' },
+          maxPrice: { $max: '$price' }
+        }
+      },
+      {
+        //at this point, you need to use the
+        //key variable names from the above step
+        $sort: { avgPrice: 1 }
+      }
+      // {
+      //   //exclude
+      //   $match: { _id: { $ne: 'EASY' } }
+      // }
+    ]);
+
+    console.log(stats);
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        stats
+      }
     });
   } catch (err) {
     res.status(404).json({

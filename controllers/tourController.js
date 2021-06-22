@@ -13,7 +13,11 @@ exports.getAllTours = async (req, res) => {
 
     excludedFields.forEach(el => delete queryObj[el]);
 
-    const query = await Tour.find(queryObj);
+    const query = Tour.find(queryObj);
+
+    // console.log(req.query);
+
+    // {difficulty: 'easy', duration: {$gte: 5}}
 
     // const query = await Tour.find()
     //   .where('duration')

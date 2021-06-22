@@ -48,7 +48,8 @@ const tourSchema = new mongoose.Schema({
   images: [String],
   createdAt: {
     type: Date,
-    default: Date.now()
+    default: Date.now(),
+    select: false //this essentially excludes displaying this in res.body (hides this from output)
   },
   startDates: [Date]
 });

@@ -27,19 +27,22 @@ exports.getAllTours = async (req, res) => {
 
     //2)sorting
     if (req.query.sort) {
-      //for 2 sort criteria: sort('price ratingsAverage')
-      // so with query params, use comma
-      //then replace with space
       const sortBy = req.query.sort.split(',').join(' ');
-
-      //mongoose auto sorts. this is not a js array sort method
       query = query.sort(sortBy);
-
-      //for 2 sort criteria: sort('price ratingsAverage')
-      // so with query params, use comma
-      //then replace with space
     } else {
       query = query.sort('-createdAt');
+    }
+
+    //3)field limiting aka projecting
+    // url/tours?fields=name,duration,difficulty,price
+    if (req.query.fields) {
+      //projecting
+      // query = query.select('name duration price')
+      const fields = req.query.fields.split(',').join(' ');
+      query = query.select(fields);
+    } else {
+      //this does what i learned about setting a field to 0
+      query = query.select('-__v');
     }
 
     //EXECUTE QUERY

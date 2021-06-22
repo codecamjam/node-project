@@ -1,5 +1,13 @@
 const Tour = require('./../models/tourModel');
 
+exports.aliasTopTours = async (req, res, next) => {
+  req.query.limit = '5';
+  req.query.sort = '-ratingsAverage,price';
+  req.query.fields =
+    'name,price,ratingsAverage,summary,difficulty';
+  next();
+};
+
 exports.getAllTours = async (req, res) => {
   try {
     console.log(req.query);
@@ -43,19 +51,8 @@ exports.getAllTours = async (req, res) => {
 
     //4)pagination
     const page = req.query.page * 1 || 1;
-    //ideally user wont bother for page limit
     const limit = req.query.limit * 1 || 100;
     const skip = (page - 1) * limit;
-
-    //limit - amt of results we want in query
-    //skip - amt of results to skip before we query the data
-
-    //page=2&limit=10
-    //means results 1-10 page 1 and 11-20 on page 2
-    //so skip 10 results before we start querying
-    //1-10, page 1
-    //11-20, page 2,
-    //21-30, page 3, etc
 
     query = query.skip(skip).limit(limit);
 

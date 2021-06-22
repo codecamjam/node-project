@@ -5,7 +5,7 @@ exports.getAllTours = async (req, res) => {
     console.log(req.query);
 
     //BUILD QUERY
-    //1) filtering
+    //1a) filtering
     const queryObj = { ...req.query };
     const excludedFields = [
       'page',
@@ -15,29 +15,35 @@ exports.getAllTours = async (req, res) => {
     ];
     excludedFields.forEach(el => delete queryObj[el]);
 
-    //2) adv filtering
-    // {difficulty: 'easy', duration: {$gte: 5}}
-    //{ duration: { gte: '5' }, difficulty: 'easy' }
-    //gte, gt, lte, lt need to add the dollar sign thats what we did
-    //above
-
+    //1b) adv filtering
     let queryStr = JSON.stringify(queryObj);
     queryStr = queryStr.replace(
       /\b(gte|gt|lte|lt)\b/g,
       match => `$${match}`
     );
-    console.log(JSON.parse(queryStr));
 
-    const query = Tour.find(JSON.parse(queryStr));
+    //remember find returns a query, so we can chain bunch more queries
+    let query = Tour.find(JSON.parse(queryStr));
+
+    //2)sorting
+    if (req.query.sort) {
+      //for 2 sort criteria: sort('price ratingsAverage')
+      // so with query params, use comma
+      //then replace with space
+      const sortBy = req.query.sort.split(',').join(' ');
+
+      //mongoose auto sorts. this is not a js array sort method
+      query = query.sort(sortBy);
+
+      //for 2 sort criteria: sort('price ratingsAverage')
+      // so with query params, use comma
+      //then replace with space
+    } else {
+      query = query.sort('-createdAt');
+    }
 
     //EXECUTE QUERY
     const tours = await query;
-
-    // const query = await Tour.find()
-    //   .where('duration')
-    //   .equals(5)
-    //   .where('difficulty')
-    //   .equals('easy');
 
     //SEND RESPONSE
     res.status(200).json({

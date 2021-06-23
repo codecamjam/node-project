@@ -2,14 +2,9 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 
 //UNCAUGHT EXCEPTIONS
-///needs to be above all code to catch uncaught exceptions
 process.on('uncaughtException', err => {
   console.log('UNCAUGHT EXCEPTION! 💥 Shutting down...');
   console.log(err.name, err.message);
-  //for uncaught exceptions, its a good
-  //idea to just crash the program (exit 0)
-  //because the entire node process is in an unclean
-  //state. to fix, terminate the program and restart it
   process.exit(0);
 });
 
@@ -22,10 +17,6 @@ const DB = process.env.DATABASE.replace(
   process.env.DATABASE_PASSWORD
 );
 
-//suppose the mongodb password is wrong
-//well without the catch block
-//we get an unhandled promise rejection
-//move to on('unhandledRejection')
 mongoose
   .connect(DB, {
     useNewUrlParser: true,
@@ -49,8 +40,3 @@ process.on('unhandledRejection', err => {
   console.log('UNHANDLED REJECTION! 💥 Shutting down...');
   server.close(() => process.exit(1));
 });
-
-// console.log(x);
-
-//IDEALLY ERRORS SHOULD BE HANDLED RIGHT WHERE THEY OCCUR,
-//NOT JUST RELY ON THESE CALLBACKS

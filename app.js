@@ -6,17 +6,21 @@ const userRouter = require('./routes/userRoutes');
 
 const app = express();
 
-//1) MIDDLEWARES
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
 app.use(express.json());
-app.use(express.static(`${__dirname}/public`)); //for serving static files
+app.use(express.static(`${__dirname}/public`));
 
-app.use((req, res, next) => {
-  console.log('hello from middleware 👋');
-  next();
+//this is a catch all for unhandled routes. basically
+//if user types in invalid url, this is going to handle it
+//hence the all function (all http methods)
+app.all('*', (req, res) => {
+  res.status(404).json({
+    status: 'fail',
+    message: `Can't find ${req.originalUrl} on this server!`
+  });
 });
 
 app.use((req, res, next) => {
@@ -24,8 +28,6 @@ app.use((req, res, next) => {
   next();
 });
 
-//mounting the routers
-//3) ROUTES
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 

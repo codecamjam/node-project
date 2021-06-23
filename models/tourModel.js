@@ -42,7 +42,7 @@ const tourSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      trim: true //only works on strings
+      trim: true
     },
     imageCover: {
       type: String,
@@ -54,7 +54,11 @@ const tourSchema = new mongoose.Schema(
       default: Date.now(),
       select: false
     },
-    startDates: [Date]
+    startDates: [Date],
+    secretTour: {
+      type: Boolean,
+      default: false
+    }
   },
   {
     toJSON: { virtuals: true },
@@ -66,58 +70,47 @@ tourSchema.virtual('durationWeeks').get(function() {
   return this.duration / 7;
 });
 
-//4 types of mongoose middlware
-//document, query, aggregate, and model
-//document mw - can act on the currently processed document
-
-//this is for premiddlware which runs before an event
-//(in this case before a save event)
-//so before a doc is saved to the db
-//DOC MW: runs before .save() and .create() but not on .insertMany()
-//so only save and create this func will run
 tourSchema.pre('save', function(next) {
-  //this keyword points to currently processed document
-  //add a slug to the document
   this.slug = slugify(this.name, { lower: true });
-  next(); //add this or you get stuck!
-});
-
-tourSchema.pre('save', function(next) {
-  console.log('will save doc');
-  next();
-});
-//can have multiple pre/post middlwares for the same hook
-//'save' is an example of a pre save hook
-
-//executed after all pre middlwares are executed
-//so now we have the finished doc
-tourSchema.post('save', function(doc, next) {
-  console.log(doc);
   next();
 });
 
-/* 
-THIS IS WHAT THE DOC LOOKS LIKE BEFORE ITS SAVED TO DB
-THEREFORE WE CAN ACT ON THIS DATA BEFORE ITS SAVED TO THE DATABASE
-WE GONNA CREATE A SLUG - a string we can put on the url
-{
-  ratingsAverage: 4.5,
-  ratingsQuantity: 0,
-  images: [],
-  createdAt: 2021-06-23T02:16:43.168Z,
-  startDates: [],
-  _id: 60d29a2855214a23accba751,
-  name: 'The Test Tour',
-  duration: 4,
-  maxGroupSize: 10,
-  difficulty: 'difficult',
-  price: 997,
-  summary: 'Test TOur',
-  imageCover: 'tour-3-cover.jpg',
-  durationWeeks: 0.5714285714285714,
-  id: '60d29a2855214a23accba751'
-}
-*/
+// tourSchema.pre('save', function(next) {
+//   console.log('will save doc');
+//   next();
+// });
+
+// tourSchema.post('save', function(doc, next) {
+//   console.log(doc);
+//   next();
+// });
+
+//QUERY middleware allows us to run actions before or after
+//a query is executed
+//lets add a pre find hook
+//runs before any find query executes
+// tourSchema.pre('find', function(next) {
+//we also need a pre hook for findById and perhaps other
+//find queries so now we use a regular expression
+tourSchema.pre(/^find/, function(next) {
+  //find makes it query mw
+  //THIS points to current query
+  //use case: secret tours for vips
+  this.find({ secretTour: { $ne: true } });
+
+  this.start = Date.now();
+  next();
+});
+
+//runs after query was executed, so it has
+//access to the doc returned from the query
+tourSchema.post(/^find/, function(docs, next) {
+  console.log(
+    `Query took ${Date.now() - this.start} milliseconds`
+  );
+  console.log(docs);
+  next();
+});
 
 const Tour = mongoose.model('Tour', tourSchema);
 

@@ -1,6 +1,18 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 
+//UNCAUGHT EXCEPTIONS
+///needs to be above all code to catch uncaught exceptions
+process.on('uncaughtException', err => {
+  console.log('UNCAUGHT EXCEPTION! 💥 Shutting down...');
+  console.log(err.name, err.message);
+  //for uncaught exceptions, its a good
+  //idea to just crash the program (exit 0)
+  //because the entire node process is in an unclean
+  //state. to fix, terminate the program and restart it
+  process.exit(0);
+});
+
 dotenv.config({ path: './config.env' });
 
 const app = require('./app');
@@ -25,24 +37,20 @@ mongoose
     // console.log(con.connections);
     console.log('DB connection successful');
   });
-// .catch(() => console.log('ERROR'));
 
 const port = process.env.PORT || 3000;
 
-//because process.exit is a hard stop,
-//handle gracefully by saving the server
-//as a variable and calliong server.close()
-// in the unhandledRejection listener
 const server = app.listen(port, () => {
   console.log(`App running on port ${port}...`);
 });
 
-//so we did this to handle unhandle rejections
-//but process.exit is a hard exit
-//its better to gracefully close the server
 process.on('unhandledRejection', err => {
   console.log(err.name, err.message);
   console.log('UNHANDLED REJECTION! 💥 Shutting down...');
-  // process.exit(0); //0 success, 1 uncaught exception
   server.close(() => process.exit(1));
 });
+
+// console.log(x);
+
+//IDEALLY ERRORS SHOULD BE HANDLED RIGHT WHERE THEY OCCUR,
+//NOT JUST RELY ON THESE CALLBACKS

@@ -85,30 +85,28 @@ tourSchema.pre('save', function(next) {
 //   next();
 // });
 
-//QUERY middleware allows us to run actions before or after
-//a query is executed
-//lets add a pre find hook
-//runs before any find query executes
-// tourSchema.pre('find', function(next) {
-//we also need a pre hook for findById and perhaps other
-//find queries so now we use a regular expression
 tourSchema.pre(/^find/, function(next) {
-  //find makes it query mw
-  //THIS points to current query
-  //use case: secret tours for vips
   this.find({ secretTour: { $ne: true } });
 
   this.start = Date.now();
   next();
 });
 
-//runs after query was executed, so it has
-//access to the doc returned from the query
 tourSchema.post(/^find/, function(docs, next) {
   console.log(
     `Query took ${Date.now() - this.start} milliseconds`
   );
-  console.log(docs);
+  // console.log(docs);
+  next();
+});
+
+//AGGREGATION MIDDLEWARE
+tourSchema.pre('aggregate', function(next) {
+  this.pipeline().unshift({
+    $match: { secretTour: { $ne: true } }
+  });
+  console.log(this.pipeline());
+
   next();
 });
 

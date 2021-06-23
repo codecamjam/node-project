@@ -1,6 +1,7 @@
 const Tour = require('./../models/tourModel');
 const APIFeatures = require('./../utils/apiFeatures');
 const catchAsync = require('../utils/catchAsync');
+const AppError = require('../utils/appError');
 
 exports.aliasTopTours = async (req, res, next) => {
   req.query.limit = '5';
@@ -30,6 +31,14 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
 
 exports.getTour = catchAsync(async (req, res, next) => {
   const tour = await Tour.findById(req.params.id);
+
+  if (!tour) {
+    //need to return to avoid sending two responses
+    return next(
+      new AppError('No tour found with that ID', 404)
+    );
+  }
+
   res.status(200).json({
     status: 'success',
     data: {
@@ -38,22 +47,6 @@ exports.getTour = catchAsync(async (req, res, next) => {
   });
 });
 
-//goal of this function is to catch async errors
-//param: fn, where function is createTour for example
-// const catchAsync = fn => {
-//   //remember async funcs return promises
-//   //so if promise is rejected, we can call catch
-//   //so for createTour function, we removed the catch
-//   //and transferred it to here instead
-//   return (req, res, next) => {
-//     // fn(req, res, next).catch(err => next(err));
-//     //this is equivalent to the above
-//     fn(req, res, next).catch(next);
-//   };
-// };
-
-//added next because remember we need next to pas the error into it
-//so error can be handled in the global error middleware
 exports.createTour = catchAsync(async (req, res, next) => {
   const newTour = await Tour.create(req.body);
   res.status(201).json({
@@ -63,23 +56,6 @@ exports.createTour = catchAsync(async (req, res, next) => {
     }
   });
 });
-
-// exports.createTour = async (req, res) => {
-//   try {
-//     const newTour = await Tour.create(req.body);
-//     res.status(201).json({
-//       status: 'success',
-//       data: {
-//         tour: newTour
-//       }
-//     });
-//   } catch (err) {
-//     res.status(404).json({
-//       status: 'fail',
-//       message: err
-//     });
-//   }
-// };
 
 exports.updateTour = catchAsync(async (req, res, next) => {
   const tour = await Tour.findByIdAndUpdate(
@@ -91,6 +67,12 @@ exports.updateTour = catchAsync(async (req, res, next) => {
     }
   );
 
+  if (!tour) {
+    return next(
+      new AppError('No tour found with that ID', 404)
+    );
+  }
+
   res.status(200).json({
     status: 'success',
     data: {
@@ -100,7 +82,14 @@ exports.updateTour = catchAsync(async (req, res, next) => {
 });
 
 exports.deleteTour = catchAsync(async (req, res, next) => {
-  await Tour.findByIdAndDelete(req.params.id);
+  const tour = await Tour.findByIdAndDelete(req.params.id);
+
+  if (!tour) {
+    return next(
+      new AppError('No tour found with that ID', 404)
+    );
+  }
+
   res.status(204).json({
     status: 'success',
     data: null

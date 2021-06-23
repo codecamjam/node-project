@@ -1,8 +1,4 @@
-//these are handlers (aka controllers)
 module.exports = (err, req, res, next) => {
-  //stack trace
-  console.log(err.stack); //will show where err happened
-
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
 

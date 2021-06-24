@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 
-//UNCAUGHT EXCEPTIONS
 process.on('uncaughtException', err => {
   console.log('UNCAUGHT EXCEPTION! 💥 Shutting down...');
   console.log(err.name, err.message);
@@ -25,7 +24,6 @@ mongoose
     useUnifiedTopology: true
   })
   .then(() => {
-    // console.log(con.connections);
     console.log('DB connection successful');
   });
 

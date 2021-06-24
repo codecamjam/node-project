@@ -32,7 +32,6 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
 exports.getTour = catchAsync(async (req, res, next) => {
   const tour = await Tour.findById(req.params.id);
   if (!tour) {
-    //need to return to avoid sending two responses
     return next(
       new AppError('No tour found with that ID', 404)
     );
@@ -128,7 +127,7 @@ exports.getTourStats = catchAsync(
 
 exports.getMonthlyPlan = catchAsync(
   async (req, res, next) => {
-    const year = req.params.year * 1; //2021
+    const year = req.params.year * 1;
 
     const plan = await Tour.aggregate([
       {

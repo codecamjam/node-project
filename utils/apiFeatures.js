@@ -14,7 +14,6 @@ class APIFeatures {
     ];
     excludedFields.forEach(el => delete queryObj[el]);
 
-    //1b) adv filtering
     let queryStr = JSON.stringify(queryObj);
     queryStr = queryStr.replace(
       /\b(gte|gt|lte|lt)\b/g,

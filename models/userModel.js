@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please provide your email'],
     unique: true,
-    lowercase: true, //all it does is transform the email to lowercase
+    lowercase: true,
     validate: [
       validator.isEmail,
       'Please provide a valid email'
@@ -21,15 +21,14 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, 'Please provide a password'],
-    minLength: 8
+    minLength: 8,
+    select: false //this will prevent the pw from being shown in res output (didnt work in post)
   },
   passwordConfirm: {
     type: String,
     required: [true, 'Please confirm your password'],
     validate: {
       //THIS ONLY WORKS ON CREATE OR ON SAVE!!!!!!!
-      //this means that whenever we update a user, we will have to
-      //use save, not findOneAndUpdate like we did with tours
       validator: function(el) {
         return el === this.password;
       },
@@ -39,14 +38,29 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.pre('save', async function(next) {
-  //JONAS COMMENT: ONLY RUN THIS FUNC IF PW WAS ACTUALLY MODIFIED
   if (!this.isModified('password')) return next();
-  //JONAS COMMENT: HASH THE PW WITH COST OF 12
   this.password = await bcrypt.hash(this.password, 12);
-  //JONAS COMMMENT: DELETE PASSWORDCONFIRM FIELD
   this.passwordConfirm = undefined;
   next();
 });
+
+//here we create an instance method
+//a method that will be available on all documents
+//in the user collection
+
+userSchema.methods.correctPassword = async function(
+  candidatePassword,
+  userPassword
+) {
+  //THIS points to current document
+  //but bc password.select === false,
+  //this.password is not available
+  //this function will return true if passwords are same, false if not
+  return await bcrypt.compare(
+    candidatePassword,
+    userPassword
+  );
+};
 
 const User = mongoose.model('User', userSchema);
 

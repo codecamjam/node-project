@@ -17,12 +17,6 @@ app.use(express.static(`${__dirname}/public`));
 
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
-
-  // console.log(x); //you wont see an error
-  //because this middleware is called only if there is a request
-  //it wasnt caught in uncaught exception
-  //instead it got caught in errorController
-  //will use the error middleware instead
   next();
 });
 

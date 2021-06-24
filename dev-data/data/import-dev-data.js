@@ -18,16 +18,13 @@ mongoose
     useUnifiedTopology: true
   })
   .then(() => {
-    // console.log(con.connections);
     console.log('DB connection successful');
   });
 
-//READ JSON FILE
 const tours = JSON.parse(
   fs.readFileSync(`${__dirname}/tours-simple.json`, 'utf-8')
 );
 
-//IMPORT DATA INTO DATABASE_
 const importData = async () => {
   try {
     await Tour.create(tours);
@@ -38,7 +35,6 @@ const importData = async () => {
   }
 };
 
-//DELETE ALL DATA FROM DB
 const deleteData = async () => {
   try {
     await Tour.deleteMany({});

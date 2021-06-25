@@ -77,3 +77,39 @@ exports.login = catchAsync(async (req, res, next) => {
     token
   });
 });
+
+exports.protect = catchAsync(async (req, res, next) => {
+  let token;
+  //1 getting token and check if it's there
+  //common practice is send token in header in http request
+  //key: Authorization
+  //value: Bearer jklhkhljkhjkhkjhkjhkj <- part is the token (jklhkl...etc)
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  console.log(token);
+
+  if (!token) {
+    return next(
+      new AppError(
+        'You are not logged in! Please log in to get access.',
+        401 //unauthorized
+      )
+    );
+  }
+  //need to validation/verify the token
+  //basically a token where nobody tried to change the payload
+  //in our case, the payload is the user id
+  //for which the token was issued
+  //2 verification token (jwt algo verifies token)
+
+  //3 check if user still exists
+
+  //4 check if user changed password after the token JWT was issued
+
+  next();
+});

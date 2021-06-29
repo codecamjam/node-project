@@ -11,7 +11,10 @@ router.post(
   '/forgotPassword',
   authController.forgotPassword
 ); //only receive email addr
-router.post('/resetPassword', authController.resetPassword); //receieve token and new pw
+router.patch(
+  '/resetPassword/:token',
+  authController.resetPassword
+); //receieve token and new pw
 
 router
   .route('/')

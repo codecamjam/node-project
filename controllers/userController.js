@@ -21,9 +21,7 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
   });
 });
 
-//user can update name and email address
 exports.updateMe = catchAsync(async (req, res, next) => {
-  //1 create error if user POSTs password data
   if (req.body.password || req.body.passwordConfirm) {
     return next(
       new AppError(
@@ -33,31 +31,12 @@ exports.updateMe = catchAsync(async (req, res, next) => {
     );
   }
 
-  /*
-  update user document
-  we could try to use user.save() getting the user updating the properties
-  and saving the doc but the problem with that is there are some fields
-  that are required that we arent updating
-  demonstration with req.body:
-  {"name":"Jonas Schmedtmann"}
-  const user = await User.findById(req.user.id);
-  user.name = 'Jonas';
-  await user.save();
-  we get error: please confirm your password bc its a required field
-  but we didnt specify it so the save method is not the correct option
-  so instead we do findByIdAndUpdate since we're not dealing with sensitive data
-  */
-
-  //1st arg req.body, 2nd data x and 3rd argument is options
-  //x is because we dont want to update everything in the body
-  //need to guarantee only name and email can be updated
-  //so in essence filter the req.body
   const filteredBody = filterObj(req.body, 'name', 'email');
   const updatedUser = await User.findByIdAndUpdate(
     req.user.id,
-    filteredBody, // x,
+    filteredBody,
     {
-      new: true, //return updated new object,
+      new: true,
       runValidators: true
     }
   );
@@ -67,6 +46,17 @@ exports.updateMe = catchAsync(async (req, res, next) => {
     data: {
       user: updatedUser
     }
+  });
+});
+
+//we arent actually deleting a doc from the db
+//we are just marking them as inactive
+exports.deleteMe = catchAsync(async (req, res, next) => {
+  await User.findByIdAndUpdate(req.user.id, { active: false });
+
+  res.status(204).json({
+    status: 'success',
+    data: null
   });
 });
 
@@ -85,13 +75,6 @@ exports.createUser = (req, res) => {
 };
 
 exports.updateUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'This route is not yet defined'
-  });
-};
-
-exports.deleteUser = (req, res) => {
   res.status(500).json({
     status: 'error',
     message: 'This route is not yet defined'

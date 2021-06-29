@@ -15,9 +15,15 @@ router.patch(
 );
 
 router.patch(
-  '/updatePassword',
+  '/updateMyPassword',
   authController.protect,
   authController.updatePassword
+);
+
+router.patch(
+  '/updateMe',
+  authController.protect,
+  userController.updateMe
 );
 
 router

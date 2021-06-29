@@ -73,40 +73,11 @@ exports.protect = catchAsync(async (req, res, next) => {
     );
   }
 
-  //need to validation/verify the token
-  //basically a token where nobody tried to change the payload
-  //in our case, the payload is the user id
-  //for which the token was issued
-  //2 verification token (jwt algo verifies token)
-  //3rd argument is callback fn so we promisify it
-  //to use async/await
-  //this returns decoded payload from JWT
   const decoded = await promisify(jwt.verify)(
     token,
     process.env.JWT_SECRET
   );
-  //we will see the user id, iat=creation data, and exp=exp date
-  //so we got the correct user id
-  console.log(decoded);
 
-  //MOST TUTORIALS STOP AT STEP 2
-
-  //BUT WHAT IF USER HAS BEEN DELETED IN THE MEANTIME
-  //SO THE TOKEN WOULD STILL EXIST BUT IF THE USER NO LONG EXIST
-  //THEN WE DONT WANT THEM TO LOGIN
-
-  //WHAT IF USER CHANGE PASSWORD AFTER THE TOKEN HAS BEEN ISSUED??
-  //THAT SHOULD ALSO NOT WORK. EXAMPLE: IMIAGINE SOMEONE STOLE JWT
-  //FROM A USER BUT THEN IN ORDER TO PROTECT AGAINST THAT, USER
-  //CHANGES HIS PASSWORD. SO THAT OLD TOKEN BEFORE PW WAS CHANGED
-  //SHOULD NOT LONGER BE VALID TO ACCESS PROTECTED ROUTES
-
-  //3 check if user still exists
-  //this is why we used user _id as the payload
-  //fresh/current user bc not a new user...its a user based on decoded id
-  //be 100% sure id is correct
-  //since we made it this far in the code and verification was successful
-  //originally he had it labelled fresh user
   const currentUser = await User.findById(decoded.id);
 
   if (!currentUser) {
@@ -118,9 +89,6 @@ exports.protect = catchAsync(async (req, res, next) => {
     );
   }
 
-  // { id: '123456789', iat: 1624721940, exp: 1632497940 }
-  //4 check if user changed password after the token JWT was issued
-  //returns true if user changed their pw
   if (currentUser.changedPasswordAfter(decoded.iat)) {
     return next(
       new AppError(
@@ -130,8 +98,23 @@ exports.protect = catchAsync(async (req, res, next) => {
     );
   }
 
-  //GRANT ACCESS TO PROTECTED ROUTE
-  //only reach this point if everything is correct
+  //GRANT USER ACCESS TO PROTECTED ROUTE
   req.user = currentUser;
   next();
 });
+
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    //roles:[admin, lead-guide] role=user
+    if (!roles.includes(req.user.role)) {
+      return next(
+        new AppError(
+          'You do not have permission to perform this action',
+          403 //forbidden
+        )
+      );
+    }
+
+    next();
+  };
+};

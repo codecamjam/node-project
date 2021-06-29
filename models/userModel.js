@@ -13,10 +13,7 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Please provide your email'],
     unique: true,
     lowercase: true,
-    validate: [
-      validator.isEmail,
-      'Please provide a valid email'
-    ]
+    validate: [validator.isEmail, 'Please provide a valid email']
   },
   photo: String,
   role: {
@@ -42,7 +39,7 @@ const userSchema = new mongoose.Schema({
   },
   passwordChangedAt: Date,
   passwordResetToken: String,
-  passwordResetExpires: Date //bc this reset will expire after a certain time for security
+  passwordResetExpires: Date
 });
 
 userSchema.pre('save', async function(next) {
@@ -56,11 +53,28 @@ userSchema.methods.correctPassword = async function(
   candidatePassword,
   userPassword
 ) {
-  return await bcrypt.compare(
-    candidatePassword,
-    userPassword
-  );
+  return await bcrypt.compare(candidatePassword, userPassword);
 };
+
+//run before a new doc is saved so perfect place to set passwordChangedAt
+//only when we modify the password property
+userSchema.pre('save', function(next) {
+  //isNew is a mongoose feature: basically check if its a new document
+  if (!this.isModified('password') || this.isNew) return next();
+  /* in theory it should work but sometimes problem: sometimes saving
+to db is slower than issuing jwt making it so that the changed pw timestamp is set
+after the jwt has been created which means user wont be able to login with the new token
+the whole reason the new timestamp exists is so we can compare it with the jwt:
+remmebr when we check if user changed password after the token was issued
+in changedPasswordAfter function
+ const token = signToken(user._id);
+SO LONG STORY SHORT SOMETIMES token is created a bit before changed pw timestamp has been created
+ so fix bty subtracting by 1 second so pw changed at will be one second in the past cuz this overcomes the issue
+*/
+  //-1sec ensures token is created after the pw has been changed
+  this.passwordChangedAt = Date.now() - 1000;
+  next();
+});
 
 userSchema.methods.changedPasswordAfter = function(
   JWTTimestamp
@@ -76,39 +90,18 @@ userSchema.methods.changedPasswordAfter = function(
   return false;
 };
 
-/*pw reset token should be random sstring
-  doesnt need to be as cryptographically strong as pw hash
-  so we use random bytes from crypto module
-  */
 userSchema.methods.createPasswordResetToken = function() {
-  //32 number of characters, convert to hexidecimal string
   const resetToken = crypto.randomBytes(32).toString('hex');
-
-  /* basically this token is what we send to user. kinda like reset pw so user
-  can create new real pw so only user will have access to this token so
-  it behaves kinda like a pw so since its basically a pw. it means if a hacker gets db access,
-  then the hacker has access to accounts by setting a new pw so if we stored the reset token,
-  then the attacker could use this token and create a new pw aka control your account
-  SO NEVER STORE A PLAIN RESET TOKEN INTO THE DB but it doesnt need strong hash cuz
-  these reset tokens arent a big attack vector
-  */
 
   this.passwordResetToken = crypto
     .createHash('sha256')
-    .update(resetToken) //encrypts the string
+    .update(resetToken)
     .digest('hex');
-  /* we save this reset token in a new field in the db schema
-  so we can then compare it to the token that user provides
-  */
 
   console.log({ resetToken }, this.passwordResetToken);
 
-  //want this to be 10 min
   this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
 
-  //want to return plaintext token cuz thats what we'll send to the email
-  //we need to send the unencrypted token cuz otherwise it wouldnt make sense to encrypt at all
-  //cuz it would = the one in the db
   return resetToken;
 };
 

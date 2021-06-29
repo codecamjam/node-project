@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
@@ -34,9 +35,7 @@ exports.login = catchAsync(async (req, res, next) => {
     );
   }
 
-  const user = await User.findOne({ email }).select(
-    '+password'
-  );
+  const user = await User.findOne({ email }).select('+password');
 
   console.log(user);
   if (
@@ -111,7 +110,7 @@ exports.restrictTo = (...roles) => {
       return next(
         new AppError(
           'You do not have permission to perform this action',
-          403 //forbidden
+          403
         )
       );
     }
@@ -120,87 +119,102 @@ exports.restrictTo = (...roles) => {
   };
 };
 
-/* 
-  Provide email address then get a link to click
-  2 steps
-  1 user sends post req to forgot pw route with this email
-  this creates reset token and send to email address that 
-  was provided
-  random token not a jwt token
-  2 user then sends token and email to update new password
-*/
-//step 1 get user based on posted email then generate random token
-//send to users email
-exports.forgotPassword = catchAsync(
-  async (req, res, next) => {
-    //get user based on email
-    //findOne and not findById because we dont know id and user doesn know his id either
+exports.forgotPassword = catchAsync(async (req, res, next) => {
+  const user = await User.findOne({
+    email: req.body.email
+  });
 
-    const user = await User.findOne({
-      email: req.body.email
+  if (!user) {
+    return next(
+      new AppError(
+        'There is no user with that email address.',
+        404
+      )
+    );
+  }
+
+  const resetToken = user.createPasswordResetToken();
+
+  await user.save({ validateBeforeSave: false });
+
+  const resetURL = `${req.protocol}://${req.get(
+    'host'
+  )}/api/v1/users/resetPassword/${resetToken}}`;
+
+  const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}.\nIfyou didn't forget your password, please ignore this email!`;
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: 'Your password reset token (valid for 10 min)',
+      message
     });
 
-    if (!user) {
-      return next(
-        new AppError(
-          'There is no user with that email address.',
-          404
-        )
-      );
-    }
+    res.status(200).json({
+      status: 'success',
+      message: 'Token sent to email!'
+    });
+  } catch (err) {
+    console.log(err);
 
-    //generate random reset token
-    const resetToken = user.createPasswordResetToken();
-
-    //so we didnt update/save the document. we just modified it,
-    //so we need to save it
-    /* on first post with
-    no body we were trying to save a document but didnt specify the required data*/
-    //this will deactivate all validators in our schema
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
     await user.save({ validateBeforeSave: false });
 
-    //send it to users email
-    //ideally user would click email and do request from there (will do later)
-    const resetURL = `${req.protocol}://${req.get(
-      'host'
-    )}/api/v1/users/resetPassword/${resetToken}}`; //here we send plain token and not encrypted one
-
-    const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}.\nIfyou didn't forget your password, please ignore this email!`;
-
-    //need to handle errors (more than just sending to global error handlers)
-
-    try {
-      await sendEmail({
-        email: user.email,
-        subject:
-          'Your password reset token (valid for 10 min)',
-        message
-      });
-
-      //dont send reset token right here!!!!!
-      //we send it to email cuz its assumed to be a safe space
-      res.status(200).json({
-        status: 'success',
-        message: 'Token sent to email!'
-      });
-    } catch (err) {
-      console.log(err);
-      //in case an error occurs, then we need to remove the reset token and exp date
-      user.passwordResetToken = undefined;
-      user.passwordResetExpires = undefined;
-      await user.save({ validateBeforeSave: false });
-
-      return next(
-        new AppError(
-          'There was an error sending the email. Try again later!',
-          500 //internal server error basically
-        )
-      );
-    }
+    return next(
+      new AppError(
+        'There was an error sending the email. Try again later!',
+        500
+      )
+    );
   }
-);
+});
 
-//step 2
-exports.resetPassword = catchAsync(
-  async (req, res, next) => {}
-);
+/*
+1. get user based on the token
+2. set new password but only if new token has not expired and there is a user
+3. update changedPasswordAt property for the current user 
+4. log the user in 
+*/
+exports.resetPassword = catchAsync(async (req, res, next) => {
+  // 1. get user based on the token
+  //need to encrypt the plain text token the user was emailed
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(req.params.token)
+    .digest('hex');
+
+  //get user based on reset token
+  //will find user who has the token sent by url
+  //but we need to check the token expiration date too
+  // pwResetExpire > currentTime that means it hasnt expired yet
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: { $gte: Date.now() } //mongodb will convert this to the same format and compare
+  });
+
+  //if token has expired, it wont return any user
+  if (!user) {
+    return next(
+      new AppError(
+        'Token is invalid or has expired',
+        400 //bad request
+      )
+    );
+  }
+
+  //2 we sent the password and password confirm via the body
+  user.password = req.body.password;
+  user.passwordConfirm = req.body.passwordConfirm;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  await user.save();
+
+  //3 if everything ok, send token to client
+  const token = signToken(user._id);
+
+  res.status(200).json({
+    status: 'success',
+    token
+  });
+});

@@ -12,18 +12,21 @@ const signToken = id => {
   });
 };
 
-exports.signup = catchAsync(async (req, res, next) => {
-  const newUser = await User.create(req.body);
+const createSendToken = (user, statusCode, res) => {
+  const token = signToken(user._id);
 
-  const token = signToken(newUser._id);
-
-  res.status(201).json({
+  res.status(statusCode).json({
     status: 'success',
     token,
     data: {
-      user: newUser
+      user
     }
   });
+};
+
+exports.signup = catchAsync(async (req, res, next) => {
+  const newUser = await User.create(req.body);
+  createSendToken(newUser, 201, res);
 });
 
 exports.login = catchAsync(async (req, res, next) => {
@@ -47,12 +50,7 @@ exports.login = catchAsync(async (req, res, next) => {
     );
   }
 
-  const token = signToken(user._id);
-
-  res.status(200).json({
-    status: 'success',
-    token
-  });
+  createSendToken(user, 200, res);
 });
 
 exports.protect = catchAsync(async (req, res, next) => {
@@ -170,51 +168,55 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   }
 });
 
-/*
-1. get user based on the token
-2. set new password but only if new token has not expired and there is a user
-3. update changedPasswordAt property for the current user 
-4. log the user in 
-*/
 exports.resetPassword = catchAsync(async (req, res, next) => {
-  // 1. get user based on the token
-  //need to encrypt the plain text token the user was emailed
   const hashedToken = crypto
     .createHash('sha256')
     .update(req.params.token)
     .digest('hex');
 
-  //get user based on reset token
-  //will find user who has the token sent by url
-  //but we need to check the token expiration date too
-  // pwResetExpire > currentTime that means it hasnt expired yet
   const user = await User.findOne({
     passwordResetToken: hashedToken,
-    passwordResetExpires: { $gte: Date.now() } //mongodb will convert this to the same format and compare
+    passwordResetExpires: { $gte: Date.now() }
   });
 
-  //if token has expired, it wont return any user
   if (!user) {
     return next(
-      new AppError(
-        'Token is invalid or has expired',
-        400 //bad request
-      )
+      new AppError('Token is invalid or has expired', 400)
     );
   }
 
-  //2 we sent the password and password confirm via the body
   user.password = req.body.password;
   user.passwordConfirm = req.body.passwordConfirm;
   user.passwordResetToken = undefined;
   user.passwordResetExpires = undefined;
   await user.save();
 
-  //3 if everything ok, send token to client
-  const token = signToken(user._id);
+  createSendToken(user, 200, res);
+});
 
-  res.status(200).json({
-    status: 'success',
-    token
-  });
+exports.updatePassword = catchAsync(async (req, res, next) => {
+  //1 get user from collection just by adding protect middleware
+
+  const user = await User.findById(req.user.id).select(
+    '+password'
+  );
+
+  //2 check if posted current password is correct
+  if (
+    !(await user.correctPassword(
+      req.body.passwordCurrent,
+      user.password
+    ))
+  ) {
+    return next(
+      new AppError('Your current password is wrong', 401)
+    );
+  }
+
+  //3 if so, update the password
+  user.password = req.body.password;
+  user.passwordConfirm = req.body.passwordConfirm;
+  await user.save();
+
+  createSendToken(user, 200, res);
 });

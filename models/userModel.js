@@ -56,22 +56,9 @@ userSchema.methods.correctPassword = async function(
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 
-//run before a new doc is saved so perfect place to set passwordChangedAt
-//only when we modify the password property
 userSchema.pre('save', function(next) {
-  //isNew is a mongoose feature: basically check if its a new document
   if (!this.isModified('password') || this.isNew) return next();
-  /* in theory it should work but sometimes problem: sometimes saving
-to db is slower than issuing jwt making it so that the changed pw timestamp is set
-after the jwt has been created which means user wont be able to login with the new token
-the whole reason the new timestamp exists is so we can compare it with the jwt:
-remmebr when we check if user changed password after the token was issued
-in changedPasswordAfter function
- const token = signToken(user._id);
-SO LONG STORY SHORT SOMETIMES token is created a bit before changed pw timestamp has been created
- so fix bty subtracting by 1 second so pw changed at will be one second in the past cuz this overcomes the issue
-*/
-  //-1sec ensures token is created after the pw has been changed
+
   this.passwordChangedAt = Date.now() - 1000;
   next();
 });

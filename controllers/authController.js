@@ -118,3 +118,51 @@ exports.restrictTo = (...roles) => {
     next();
   };
 };
+
+/* 
+  Provide email address then get a link to click
+  2 steps
+  1 user sends post req to forgot pw route with this email
+  this creates reset token and send to email address that 
+  was provided
+  random token not a jwt token
+  2 user then sends token and email to update new password
+*/
+//step 1 get user based on posted email then generate random token
+//send to users email
+exports.forgotPassword = catchAsync(
+  async (req, res, next) => {
+    //get user based on email
+    //findOne and not findById because we dont know id and user doesn know his id either
+
+    const user = await User.findOne({
+      email: req.body.email
+    });
+
+    if (!user) {
+      return next(
+        new AppError(
+          'There is no user with that email address.',
+          404
+        )
+      );
+    }
+
+    //generate random reset token
+    const resetToken = user.createPasswordResetToken();
+
+    //so we didnt update/save the document. we just modified it,
+    //so we need to save it
+    /* on first post with
+    no body we were trying to save a document but didnt specify the required data*/
+    //this will deactivate all validators in our schema
+    await user.save({ validateBeforeSave: false });
+
+    //send it to users email
+  }
+);
+
+//step 2
+exports.resetPassword = catchAsync(
+  async (req, res, next) => {}
+);

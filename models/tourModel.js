@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
+const User = require('./userModel');
 
 const tourSchema = new mongoose.Schema(
   {
@@ -85,31 +86,18 @@ const tourSchema = new mongoose.Schema(
       default: false
     },
     startLocation: {
-      //THIS IS AN EMBEDDED OBJECT
-      /* 
-      IN ORDER TO SPECIFY GEOSPATIAL DATA WITH MONGODB, WE NEED TO CREATE A NEW OBJECT
-      AND IT NEEDS TO HAVE AT LEAST 2 FIELD NAMES: COORDINATESS AND TYPE OF TYPE STRING WITH A GEOMETRY (POINT IN THIS CASE)
-      */
-      //this is an embedded object, not schema type options
-      //dataformat geoJSON to specify geospatial data
-      //need type and coordinate properties
-      //both these subfields get their own schema type options
       type: {
         type: String,
-        default: 'Point', //default geometry is point but theres also polygons, lines, etc
-        enum: ['Point'] //this makes it the only option
+        default: 'Point',
+        enum: ['Point']
       },
-      coordinates: [Number], //coordinates of the point with longitude first
-      // and latitude 2nd (usually other way around, like on google maps for example)
-      //thats just how geojson works
+      coordinates: [Number],
+
       address: String,
       description: String
     },
     locations: [
-      //by specifiying array of object, this will create new documents inside parent document
-      //to create new documents and embed them in another doc, we created an array
       {
-        //this specifies the object schema type options
         type: {
           type: String,
           default: 'Point',
@@ -118,9 +106,10 @@ const tourSchema = new mongoose.Schema(
         coordinates: [Number],
         address: String,
         description: String,
-        day: Number //this is day of tour when people visit this location
+        day: Number
       }
-    ]
+    ],
+    guides: Array //going to embed users into the tours document
   },
   {
     toJSON: { virtuals: true },
@@ -134,6 +123,17 @@ tourSchema.virtual('durationWeeks').get(function() {
 
 tourSchema.pre('save', function(next) {
   this.slug = slugify(this.name, { lower: true });
+  next();
+});
+
+//EXAMPLE OF HOW TO EMBED USERS IN THE TOURS DOCUMENTS
+tourSchema.pre('save', async function(next) {
+  //array of all user ids and get the user document for each user id
+  const guidesPromises = this.guides.map(
+    async id => await User.findById(id)
+  );
+  //use promise.all because the result of the maps returns array of promises
+  this.guides = await Promise.all(guidesPromises);
   next();
 });
 

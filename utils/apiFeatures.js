@@ -6,12 +6,7 @@ class APIFeatures {
 
   filter() {
     const queryObj = { ...this.queryString };
-    const excludedFields = [
-      'page',
-      'sort',
-      'limit',
-      'fields'
-    ];
+    const excludedFields = ['page', 'sort', 'limit', 'fields'];
     excludedFields.forEach(el => delete queryObj[el]);
 
     let queryStr = JSON.stringify(queryObj);
@@ -25,11 +20,16 @@ class APIFeatures {
     return this;
   }
 
+  /* 
+  {{URL}}/api/v1/tours?sort=duration&sort=price this threw an error because the split method was
+  being called but express made the query string an array since we defined sort twice
+  [duration, price] so we couldnt split 
+  this is a problem hackers can exploit
+  so we use a middleware to remove duplicate query fields aka param pollution hpp
+  */
   sort() {
     if (this.queryString.sort) {
-      const sortBy = this.queryString.sort
-        .split(',')
-        .join(' ');
+      const sortBy = this.queryString.sort.split(',').join(' ');
       this.query = this.query.sort(sortBy);
     } else {
       this.query = this.query.sort('-createdAt');

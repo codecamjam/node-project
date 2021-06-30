@@ -128,15 +128,10 @@ tourSchema.pre('save', function(next) {
   next();
 });
 
-//populate aka fill up the guide references so it displays the documents in the output
-//even though only the references are in guides, not the actual user documents themselves
-//careful with populate because it performs a 2nd query so be mindful
 tourSchema.pre(/^find/, function(next) {
-  // this.populate('guides');
-  //this points to the current query
   this.populate({
-    path: 'guides', //path to the references we want to populate
-    select: '-__v -passwordChangedAt' //hide these from output
+    path: 'guides',
+    select: '-__v -passwordChangedAt'
   });
   next();
 });

@@ -12,14 +12,6 @@ const signToken = id => {
   });
 };
 
-/*
- cookie: a small piece of txt that a server can sends to client.
- when client receives cookie it auto stores it and auto sends it with
- all future requests to that server where it came from
- later when we make a dynamic web page, we will revisit cookies
-
- 
-*/
 const createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id);
 
@@ -27,24 +19,16 @@ const createSendToken = (user, statusCode, res) => {
     expires: new Date(
       Date.now() +
         process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
-    ), //need to convert to milliseconds
-    httpOnly: true //this makes it that cookie cant be accessed/modified in any way by the browser
-    //to prevent cross side scripting
-    //all browser gonna do when httpOnly is true: receieve cookie, store it,
-    //send it automatically with every request
+    ),
+    httpOnly: true
   };
 
-  //ONLY WORKS ON HTTPS IN PROD
   if (process.env.NODE_ENV === 'production') {
-    // secure: true, //only sends on an encrypted connection (https)
     cookieOptions.secure = true;
   }
 
-  //to send a cookie: attach it to the response object
-  //specify cookie name, data we want in the cookie (token), then options
   res.cookie('jwt', token, cookieOptions);
 
-  //remove password from output
   user.password = undefined;
 
   res.status(statusCode).json({

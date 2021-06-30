@@ -49,8 +49,6 @@ exports.updateMe = catchAsync(async (req, res, next) => {
   });
 });
 
-//we arent actually deleting a doc from the db
-//we are just marking them as inactive
 exports.deleteMe = catchAsync(async (req, res, next) => {
   await User.findByIdAndUpdate(req.user.id, { active: false });
 

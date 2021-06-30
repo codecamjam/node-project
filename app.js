@@ -13,16 +13,12 @@ const userRouter = require('./routes/userRoutes');
 
 const app = express();
 
-//GLOBAL MIDDLEWARES
-//Set security http headers
 app.use(helmet());
 
-//Development logging
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-//limit requests from same API
 const limiter = rateLimit({
   max: 100,
   windowMs: 60 * 60 * 1000,
@@ -31,18 +27,10 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-//Body parser - basically reading data from body into req.body
 app.use(express.json({ limit: '10kb' }));
 
-//SANITIZE THE DATA RIGHT AFTER BODY PARSER
 app.use(mongoSanitize());
-
 app.use(xss());
-
-//Prevent parameter pollution
-//this should be used by the end since it clears up the query string
-//{{URL}}/api/v1/tours?duration=5&duration=9
-//sometimes we want duplicates so we can whitelist (its an array)
 app.use(
   hpp({
     whitelist: [
@@ -56,10 +44,8 @@ app.use(
   })
 );
 
-//Serving static files
 app.use(express.static(`${__dirname}/public`));
 
-//Test middleware
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
   next();

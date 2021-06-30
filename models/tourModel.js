@@ -80,9 +80,47 @@ const tourSchema = new mongoose.Schema(
     },
     startDates: [Date],
     secretTour: {
+      //schema type options
       type: Boolean,
       default: false
-    }
+    },
+    startLocation: {
+      //THIS IS AN EMBEDDED OBJECT
+      /* 
+      IN ORDER TO SPECIFY GEOSPATIAL DATA WITH MONGODB, WE NEED TO CREATE A NEW OBJECT
+      AND IT NEEDS TO HAVE AT LEAST 2 FIELD NAMES: COORDINATESS AND TYPE OF TYPE STRING WITH A GEOMETRY (POINT IN THIS CASE)
+      */
+      //this is an embedded object, not schema type options
+      //dataformat geoJSON to specify geospatial data
+      //need type and coordinate properties
+      //both these subfields get their own schema type options
+      type: {
+        type: String,
+        default: 'Point', //default geometry is point but theres also polygons, lines, etc
+        enum: ['Point'] //this makes it the only option
+      },
+      coordinates: [Number], //coordinates of the point with longitude first
+      // and latitude 2nd (usually other way around, like on google maps for example)
+      //thats just how geojson works
+      address: String,
+      description: String
+    },
+    locations: [
+      //by specifiying array of object, this will create new documents inside parent document
+      //to create new documents and embed them in another doc, we created an array
+      {
+        //this specifies the object schema type options
+        type: {
+          type: String,
+          default: 'Point',
+          enum: ['Point']
+        },
+        coordinates: [Number],
+        address: String,
+        description: String,
+        day: Number //this is day of tour when people visit this location
+      }
+    ]
   },
   {
     toJSON: { virtuals: true },
@@ -101,7 +139,6 @@ tourSchema.pre('save', function(next) {
 
 tourSchema.pre(/^find/, function(next) {
   this.find({ secretTour: { $ne: true } });
-
   this.start = Date.now();
   next();
 });
@@ -118,7 +155,6 @@ tourSchema.pre('aggregate', function(next) {
     $match: { secretTour: { $ne: true } }
   });
   console.log(this.pipeline());
-
   next();
 });
 

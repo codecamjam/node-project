@@ -112,6 +112,12 @@ const tourSchema = new mongoose.Schema(
         ref: 'User'
       }
     ]
+    /* we are going to do a virtual populate: because we have parent referencing of tours to reviews, we use virtual populate to reference reviews to tours so in essence this is what we are going for but virtually: 
+    reviews: [{
+      type: mongoose.Schema.ObjectId,
+      ref: 'review
+    }]
+    */
   },
   {
     toJSON: { virtuals: true },
@@ -121,6 +127,17 @@ const tourSchema = new mongoose.Schema(
 
 tourSchema.virtual('durationWeeks').get(function() {
   return this.duration / 7;
+});
+
+//VIRTUAL POPULATE -reviews to tours
+tourSchema.virtual('reviews', {
+  /* we reference the name of the model then specify the name of the fields
+  to connect the two datasets:
+  we need to specify 2 fields: foreign and local fields
+  */
+  ref: 'Review',
+  foreignField: 'tour', //referencing tour field in Review model
+  localField: '_id' //this _id in the local model is called tour in the foreign model
 });
 
 tourSchema.pre('save', function(next) {

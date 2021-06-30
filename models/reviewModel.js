@@ -37,10 +37,15 @@ const reviewSchema = new mongoose.Schema(
 );
 
 reviewSchema.pre(/^find/, function(next) {
-  this.populate({
-    path: 'tour',
-    select: '-guides -_id name'
-  }).populate({ path: 'reviewBy', select: '-_id username' });
+  // this.populate({
+  //   path: 'tour',
+  //   select: '-guides name'
+  // }).populate({ path: 'user', select: 'username' });
+
+  //WE WERE POPULATING WAY TOO MUCH AND THERE WAS DUPLICATE INFO
+  //WHEN WE HIT THE GET TOUR ROUTE
+  //so user info is sufficient
+  this.populate({ path: 'user', select: 'name' });
   next();
 });
 

@@ -15,14 +15,14 @@ const reviewSchema = new mongoose.Schema(
       type: Date,
       default: Date.now
     },
-    refToTour: [
+    tour: [
       {
         type: mongoose.Schema.ObjectId,
         ref: 'Tour',
         required: [true, 'Review must belong to a tour.']
       }
     ],
-    refToUser: [
+    user: [
       {
         type: mongoose.Schema.ObjectId,
         ref: 'User',

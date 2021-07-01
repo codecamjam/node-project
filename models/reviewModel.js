@@ -37,6 +37,8 @@ const reviewSchema = new mongoose.Schema(
   }
 );
 
+reviewSchema.index({ tour: 1, user: 1 }, { unique: true });
+
 reviewSchema.pre(/^find/, function(next) {
   this.populate({ path: 'user', select: 'name' });
   next();
@@ -57,8 +59,7 @@ reviewSchema.statics.calcAverageRatings = async function(
       }
     }
   ]);
-  //[ { _id: [ 60ddee3ca397552cfe26964d ], nRating: 1, avgRating: 3 } ]
-  // console.log(stats);
+
   if (stats.length > 0) {
     await Tour.findByIdAndUpdate(tourId, {
       ratingsQuantity: stats[0].nRating,
@@ -76,29 +77,12 @@ reviewSchema.post('save', function() {
   this.constructor.calcAverageRatings(this.tour);
 });
 
-//findByIdAndUpdate //shorthand for findoneandupdate with current id
-//findByIdAndDelete //shorthand same with delete
-//we only have query mw for these 2 hooks
 reviewSchema.pre(/^findOneAnd/, async function(next) {
-  //goal is to get access to current review document
-  // but THIS is current query
-  //so we execute the query and that will give us current processed document
-  //so now this.r is the current Review document!!!
-  this.r = await this.findOne(); //r for review
-  //but in pre it didnt persist to the db so the updated rating wasnt displayed
-  //doesnt matter bc all we are interested in is the tour ID
-  //WE CANT CHANGE PRE TO POST BECAUSE WE WONT HAVE ACCES TO QUERY, HENCE THE
-  //REV DOCUMENT, AND IT WOULDNT WORK! SO SOLUTION IS USE A POST AFTER AND PASS
-  // variable r to post query mw
-  // console.log(this.r);
-
+  this.r = await this.findOne();
   next();
 });
 
-//after query has finished and review has been updated
 reviewSchema.post(/^findOneAnd/, async function() {
-  //await this.findOne() DOES NOT WORK HERE BC QUERY HAS ALREADY EXECUTED
-  //this.r is the current review document
   await this.r.constructor.calcAverageRatings(this.r.tour);
 });
 

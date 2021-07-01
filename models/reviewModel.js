@@ -37,14 +37,6 @@ const reviewSchema = new mongoose.Schema(
 );
 
 reviewSchema.pre(/^find/, function(next) {
-  // this.populate({
-  //   path: 'tour',
-  //   select: '-guides name'
-  // }).populate({ path: 'user', select: 'username' });
-
-  //WE WERE POPULATING WAY TOO MUCH AND THERE WAS DUPLICATE INFO
-  //WHEN WE HIT THE GET TOUR ROUTE
-  //so user info is sufficient
   this.populate({ path: 'user', select: 'name' });
   next();
 });
@@ -52,3 +44,9 @@ reviewSchema.pre(/^find/, function(next) {
 const Review = mongoose.model('Review', reviewSchema);
 
 module.exports = Review;
+
+//this is the desired behavior aka a nested route
+//reviews is a child of tour
+//POST /tour/234fad4/reviews post a review of this tour
+//GET /tour/234fad4/reviews get all reviews of this tour
+//GET /tour/234fad4/reviews/sjdfhskdfh get specific review of the tour

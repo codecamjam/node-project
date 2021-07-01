@@ -42,70 +42,64 @@ reviewSchema.pre(/^find/, function(next) {
   next();
 });
 
-//STATIC METHOD CALLED ON THE MODEL
-//Review.calcAverageRatings
-//tourId is tour for which the current review belongs to
 reviewSchema.statics.calcAverageRatings = async function(
   tourId
 ) {
-  // console.log(tourId);
-  //in a static method, THIS points to current model
   const stats = await this.aggregate([
-    //select all reviews that belong to the current tour
     {
       $match: { tour: tourId }
     },
     {
       $group: {
-        //current field that all documents have in common
-        //so group by tour
         _id: '$tour',
-        //sum up the number of ratings so if theres 5 reviews for the current tour, nratings = 5
         nRating: { $sum: 1 },
-        //calculate average from the rating field
         avgRating: { $avg: '$rating' }
       }
     }
   ]);
-
-  // console.log(stats); //then update tour document with these stats
   //[ { _id: [ 60ddee3ca397552cfe26964d ], nRating: 1, avgRating: 3 } ]
-  await Tour.findByIdAndUpdate(tourId, {
-    ratingsQuantity: stats[0].nRating,
-    ratingsAverage: stats[0].avgRating
-  });
+  // console.log(stats);
+  if (stats.length > 0) {
+    await Tour.findByIdAndUpdate(tourId, {
+      ratingsQuantity: stats[0].nRating,
+      ratingsAverage: stats[0].avgRating
+    });
+  } else {
+    await Tour.findByIdAndUpdate(tourId, {
+      ratingsQuantity: 0,
+      ratingsAverage: 4.5
+    });
+  }
 };
 
-/* THIS SHOULD HAVE BEEN A POST BECAUSE
-AT PRE SAVE, THE CURRENT REVIEW ISNT IN THE COLLECTION
-SO WHEN WE DID THE MATCH IN THE CALCAVERAGERATINGS FUNCTION,
-IT SHOULDNT BE ABLE TO APPEAR IN THE OUTPUT BC AT THAT POINT IN
-TIME, ITS NOT SAVED INTO THE COLLECTION. HENCE USE POST BC
-THEN IT WOULD HAVE BEEN SAVED IN THE DATABASE SO THE CALCULATION WOULD WORK
-TO STORE THAT RESULT ON THE TOUR
-//use mw each time a new review is created
-reviewSchema.pre('save', function(next) {
-  //THIS points to current document (current review)
-
-  //need to do Review.calcAverageRatings(this.tour) but this wouldnt work so
-  //to call this function, remember this function is available on the model
-  // THIS points to current document and the CONSTRUCTOR is basically the model who
-  //created that document 
+reviewSchema.post('save', function() {
   this.constructor.calcAverageRatings(this.tour);
+});
+
+//findByIdAndUpdate //shorthand for findoneandupdate with current id
+//findByIdAndDelete //shorthand same with delete
+//we only have query mw for these 2 hooks
+reviewSchema.pre(/^findOneAnd/, async function(next) {
+  //goal is to get access to current review document
+  // but THIS is current query
+  //so we execute the query and that will give us current processed document
+  //so now this.r is the current Review document!!!
+  this.r = await this.findOne(); //r for review
+  //but in pre it didnt persist to the db so the updated rating wasnt displayed
+  //doesnt matter bc all we are interested in is the tour ID
+  //WE CANT CHANGE PRE TO POST BECAUSE WE WONT HAVE ACCES TO QUERY, HENCE THE
+  //REV DOCUMENT, AND IT WOULDNT WORK! SO SOLUTION IS USE A POST AFTER AND PASS
+  // variable r to post query mw
+  // console.log(this.r);
 
   next();
 });
-*/
 
-//remember post document middleware doesnt have next
-reviewSchema.post('save', function() {
-  //THIS points to current document (current review)
-
-  //need to do Review.calcAverageRatings(this.tour) but this wouldnt work so
-  //to call this function, remember this function is available on the model
-  // THIS points to current document and the CONSTRUCTOR is basically the model who
-  //created that document
-  this.constructor.calcAverageRatings(this.tour);
+//after query has finished and review has been updated
+reviewSchema.post(/^findOneAnd/, async function() {
+  //await this.findOne() DOES NOT WORK HERE BC QUERY HAS ALREADY EXECUTED
+  //this.r is the current review document
+  await this.r.constructor.calcAverageRatings(this.r.tour);
 });
 
 const Review = mongoose.model('Review', reviewSchema);

@@ -40,7 +40,6 @@ const tourSchema = new mongoose.Schema(
       default: 4.5,
       min: [1, 'Rating must be above 1.0'],
       max: [5, 'Rating must be below 5.0'],
-      //this runs each time the ratingsAverage is set
       set: val => Math.round(val * 10) / 10 //4.66667 -> 5, 46.66667 -> 47, 4.7
     },
     ratingsQuantity: {
@@ -123,6 +122,9 @@ const tourSchema = new mongoose.Schema(
 
 tourSchema.index({ price: 1, ratingsAverage: -1 });
 tourSchema.index({ slug: 1 });
+//for geospatial data we need 2d sphere index if data describes real pts on earthlike sphere
+//or use 2d index if using fictional pts on 2d plane
+tourSchema.index({ startLocation: '2dsphere' });
 
 tourSchema.virtual('durationWeeks').get(function() {
   return this.duration / 7;

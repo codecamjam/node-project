@@ -12,7 +12,6 @@ router.patch(
   authController.resetPassword
 );
 
-//this protects all routes that comes after this point
 router.use(authController.protect);
 
 router.patch('/updateMyPassword', authController.updatePassword);
@@ -20,7 +19,6 @@ router.get('/me', userController.getMe, userController.getUser);
 router.patch('/updateMe', userController.updateMe);
 router.delete('/deleteMe', userController.deleteMe);
 
-//from this point on, all the proceeding routes are admin only
 router.use(authController.restrictTo('admin'));
 
 router

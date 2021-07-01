@@ -47,6 +47,7 @@ const userSchema = new mongoose.Schema({
   }
 });
 
+//COMMENT OUT IF YOU RUN THE IMPORT/DELETE DATA SCRIPTS
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
@@ -54,6 +55,7 @@ userSchema.pre('save', async function(next) {
   next();
 });
 
+//COMMENT OUT IF YOU RUN THE IMPORT/DELETE DATA SCRIPTS
 userSchema.methods.correctPassword = async function(
   candidatePassword,
   userPassword
@@ -61,6 +63,7 @@ userSchema.methods.correctPassword = async function(
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 
+//COMMENT OUT IF YOU RUN THE IMPORT/DELETE DATA SCRIPTS
 userSchema.pre('save', function(next) {
   if (!this.isModified('password') || this.isNew) return next();
   this.passwordChangedAt = Date.now() - 1000;

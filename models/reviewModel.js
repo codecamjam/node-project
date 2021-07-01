@@ -44,9 +44,3 @@ reviewSchema.pre(/^find/, function(next) {
 const Review = mongoose.model('Review', reviewSchema);
 
 module.exports = Review;
-
-//this is the desired behavior aka a nested route
-//reviews is a child of tour
-//POST /tour/234fad4/reviews post a review of this tour
-//GET /tour/234fad4/reviews get all reviews of this tour
-//GET /tour/234fad4/reviews/sjdfhskdfh get specific review of the tour

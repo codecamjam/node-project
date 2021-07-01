@@ -122,8 +122,6 @@ const tourSchema = new mongoose.Schema(
 
 tourSchema.index({ price: 1, ratingsAverage: -1 });
 tourSchema.index({ slug: 1 });
-//for geospatial data we need 2d sphere index if data describes real pts on earthlike sphere
-//or use 2d index if using fictional pts on 2d plane
 tourSchema.index({ startLocation: '2dsphere' });
 
 tourSchema.virtual('durationWeeks').get(function() {
@@ -162,11 +160,25 @@ tourSchema.post(/^find/, function(docs, next) {
   next();
 });
 
+// tourSchema.pre('aggregate', function(next) {
+//   this.pipeline().unshift({
+//     $match: { secretTour: { $ne: true } }
+//   });
+//   console.log(this.pipeline());
+//   next();
+// });
 tourSchema.pre('aggregate', function(next) {
-  this.pipeline().unshift({
-    $match: { secretTour: { $ne: true } }
-  });
-  console.log(this.pipeline());
+  // Hide secret tours if geoNear is NOT used
+  if (
+    !(
+      this.pipeline().length > 0 &&
+      '$geoNear' in this.pipeline()[0]
+    )
+  ) {
+    this.pipeline().unshift({
+      $match: { secretTour: { $ne: true } }
+    });
+  }
   next();
 });
 

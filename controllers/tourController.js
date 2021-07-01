@@ -88,16 +88,39 @@ exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
   });
 });
 
-//.route('/tours-within/:distance/center/:latlng/unit/:unit')
-//tours-within/233/center/-40,45/unit/mi
 exports.getToursWithin = catchAsync(async (req, res, next) => {
   const { distance, latlng, unit } = req.params;
   const [lat, lng] = latlng.split(',');
-
-  //mongodb requires that radius must be converted to radians
-  //these values are radius of the earth in miles and km
   const radius =
     unit === 'mi' ? distance / 3963.2 : distance / 6378.1;
+  if (!lat || !lng) {
+    next(
+      new AppError(
+        'Please provide latitude and longitude in the format lat,lng.',
+        400
+      )
+    );
+  }
+  const tours = await Tour.find({
+    startLocation: {
+      $geoWithin: { $centerSphere: [[lng, lat], radius] }
+    }
+  });
+  res.status(200).json({
+    status: 'success',
+    results: tours.length,
+    data: {
+      data: tours
+    }
+  });
+});
+
+exports.getDistances = catchAsync(async (req, res, next) => {
+  const { latlng, unit } = req.params;
+  const [lat, lng] = latlng.split(',');
+
+  //convert meters to either km or mile
+  const multiplier = unit === 'mi' ? 0.000621371 : 0.001;
 
   if (!lat || !lng) {
     next(
@@ -108,21 +131,34 @@ exports.getToursWithin = catchAsync(async (req, res, next) => {
     );
   }
 
-  //get start location within sphere/diameter
-  //need to add an index for start location
-  const tours = await Tour.find({
-    startLocation: {
-      $geoWithin: { $centerSphere: [[lng, lat], radius] }
+  const distances = await Tour.aggregate([
+    {
+      //only geo aggregation pipeline stage and it must be the first stage
+      //requires that at least one field contains a geospatial index
+      //2 mandatory fields: near and distance field
+      $geoNear: {
+        near: {
+          //point from which to calculate the distance (GEOJSON)
+          type: 'Point',
+          coordinates: [lng * 1, lat * 1] //convert to numbers
+        },
+        //where all the calculated distances will be stored
+        distanceField: 'distance',
+        distanceMultiplier: multiplier
+      }
+    },
+    {
+      $project: {
+        distance: 1,
+        name: 1
+      }
     }
-  });
-
-  // console.log(distance, lat, lng, unit);
+  ]);
 
   res.status(200).json({
     status: 'success',
-    results: tours.length,
     data: {
-      data: tours
+      data: distances
     }
   });
 });

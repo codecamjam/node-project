@@ -15,13 +15,9 @@ const reviewRouter = require('./routes/reviewRoutes');
 
 const app = express();
 
-//tell express what template engine we are going to use
-//pug templates are called views
 app.set('view engine', 'pug');
-//using path util, this will create a path joining directory name /views
 app.set('views', path.join(__dirname, 'views'));
 
-// app.use(express.static(`${__dirname}/public`));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(helmet());
@@ -61,8 +57,10 @@ app.use((req, res, next) => {
 });
 
 app.get('/', (req, res) => {
-  //express auto knows its a .pug file
-  res.status(200).render('base');
+  res.status(200).render('base', {
+    tour: 'The Forest Hiker',
+    user: 'Jonas'
+  });
 });
 
 app.use('/api/v1/tours', tourRouter);

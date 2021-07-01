@@ -119,6 +119,16 @@ const tourSchema = new mongoose.Schema(
   }
 );
 
+//indexing the price field in ascending order
+//check compass and make sure you dont have the price id by itself anymore
+//since now its in a compound index
+// tourSchema.index({ price: 1});
+//compound index still works when only one is queried
+//ONLY SET INDEXES ON FIELDS THAT ARE LOW WRITE/READ RATIO
+//ONYL SET INDEXES ON FIELDS THAT WILL BE QUERIED OFTEN
+tourSchema.index({ price: 1, ratingsAverage: -1 });
+tourSchema.index({ slug: 1 }); //Later we'll query slugs for tours
+
 tourSchema.virtual('durationWeeks').get(function() {
   return this.duration / 7;
 });

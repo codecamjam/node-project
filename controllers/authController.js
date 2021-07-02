@@ -74,7 +74,6 @@ exports.protect = catchAsync(async (req, res, next) => {
   ) {
     token = req.headers.authorization.split(' ')[1];
   } else if (req.cookies.jwt) {
-    //check for the cookie if jwt is not in the auth header
     token = req.cookies.jwt;
   }
   if (!token) {
@@ -207,4 +206,28 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   user.passwordConfirm = req.body.passwordConfirm;
   await user.save();
   createSendToken(user, 200, res);
+});
+
+//only for rendered pages so no errors!
+exports.isLoggedIn = catchAsync(async (req, res, next) => {
+  if (req.cookies.jwt) {
+    //verify token
+    const decoded = await promisify(jwt.verify)(
+      req.cookies.jwt,
+      process.env.JWT_SECRET
+    );
+    //check if user still exists
+    const currentUser = await User.findById(decoded.id);
+    if (!currentUser) return next();
+    //check if user changed paw after token was issued
+    if (currentUser.changedPasswordAfter(decoded.iat))
+      return next();
+
+    //THERE IS A LOGGED IN USER
+    //so make it accessible to our template
+    res.locals.user = currentUser;
+    return next(); //return next to ensure next is only called once
+  }
+  //in case no cookie/no logged in user, call the next middleware
+  next();
 });

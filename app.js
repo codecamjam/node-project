@@ -54,10 +54,7 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-//body parser and cookie parser are similar
-//body parser parses req.body
 app.use(express.json({ limit: '10kb' }));
-//parses data from cookie
 app.use(cookieParser());
 
 app.use(mongoSanitize());
@@ -77,7 +74,7 @@ app.use(
 
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
-  console.log(req.cookies); //display all cookies in console
+  console.log(req.cookies);
   next();
 });
 

@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp');
+const cookieParser = require('cookie-parser');
 
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
@@ -21,7 +22,25 @@ app.set('views', path.join(__dirname, 'views'));
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(helmet());
+//had a bunch of CORS errors when trying to use axios. found this is comments section
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'", 'http://127.0.0.1:3000/*'],
+      baseUri: ["'self'"],
+      fontSrc: ["'self'", 'https:', 'data:'],
+      scriptSrc: [
+        "'self'",
+        'https://*.stripe.com',
+        'https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js'
+      ],
+      frameSrc: ["'self'", 'https://*.stripe.com'],
+      objectSrc: ["'none'"],
+      styleSrc: ["'self'", 'https:', 'unsafe-inline'],
+      upgradeInsecureRequests: []
+    }
+  })
+);
 
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
@@ -35,7 +54,11 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
+//body parser and cookie parser are similar
+//body parser parses req.body
 app.use(express.json({ limit: '10kb' }));
+//parses data from cookie
+app.use(cookieParser());
 
 app.use(mongoSanitize());
 app.use(xss());
@@ -54,6 +77,7 @@ app.use(
 
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
+  console.log(req.cookies); //display all cookies in console
   next();
 });
 

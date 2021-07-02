@@ -4,12 +4,18 @@ const locations = JSON.parse(
   document.getElementById('map').dataset.locations
 );
 
+const stuff = document
+  .getElementById('mapstuff')
+  .dataset.stuff.split(' ');
+const TOKEN = stuff[0];
+const STYLES = stuff[1];
+
 console.log(locations);
 
-mapboxgl.accessToken = process.env.MAPBOX_TOKEN; //this wont actually work
+mapboxgl.accessToken = TOKEN; //this wont actually work
 var map = new mapboxgl.Map({
   container: 'map',
-  style: PROCESS.ENV.MAPBOX_STYLES,
+  style: STYLES,
   scrollZoom: false
   // center: [-118.113491, 34.111745],
   // zoom: 10,

@@ -24,6 +24,14 @@ exports.getTour = catchAsync(async (req, res, next) => {
     )
     .render('tour', {
       title: `${tour.name} Tour`,
-      tour
+      tour,
+      mapboxT: process.env.MAPBOX_TOKEN,
+      mapboxS: process.env.MAPBOX_STYLES
     });
 });
+
+exports.getLoginForm = (req, res) => {
+  res.status(200).render('login', {
+    title: 'Log into your account'
+  });
+};

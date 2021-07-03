@@ -20060,13 +20060,7 @@ var _login = require("./login");
 var mapBox = document.getElementById('map');
 var mapStuff = document.getElementById('mapstuff');
 var loginForm = document.querySelector('.login-form');
-var logOutBtn = document.querySelector('.nav__el--logout'); //VALUES
-//we originally had an error placing these here
-//because we tried to read these values when the page loads
-//so move them into listener
-// const email = document.getElementById('email').value;
-// const password = document.getElementById('password').value;
-//DELEGATION
+var logOutBtn = document.querySelector('.nav__el--logout'); //DELEGATION
 
 if (mapBox && stuff) {
   var locations = JSON.parse(dataset.locations);

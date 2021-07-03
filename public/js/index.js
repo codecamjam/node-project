@@ -9,13 +9,6 @@ const mapStuff = document.getElementById('mapstuff');
 const loginForm = document.querySelector('.login-form');
 const logOutBtn = document.querySelector('.nav__el--logout');
 
-//VALUES
-//we originally had an error placing these here
-//because we tried to read these values when the page loads
-//so move them into listener
-// const email = document.getElementById('email').value;
-// const password = document.getElementById('password').value;
-
 //DELEGATION
 if (mapBox && stuff) {
   const locations = JSON.parse(dataset.locations);

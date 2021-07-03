@@ -153,7 +153,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
       message: 'Token sent to email!'
     });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
     await user.save({ validateBeforeSave: false });
@@ -236,6 +236,5 @@ exports.logout = (req, res) => {
     expires: new Date(Date.now(+10 * 1000)),
     httpOnly: true
   });
-
   res.status(200).json({ status: 'success' });
 };

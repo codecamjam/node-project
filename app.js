@@ -23,21 +23,16 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 //had a bunch of CORS errors when trying to use axios. found this is comments section
+//setting security http headers
+app.use(helmet());
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
-      defaultSrc: ["'self'", 'http://127.0.0.1:3000/*'],
+      defaultSrc: ["'self'", 'https:', 'http:', 'data:', 'ws:'],
       baseUri: ["'self'"],
-      fontSrc: ["'self'", 'https:', 'data:'],
-      scriptSrc: [
-        "'self'",
-        'https://*.stripe.com',
-        'https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js'
-      ],
-      frameSrc: ["'self'", 'https://*.stripe.com'],
-      objectSrc: ["'none'"],
-      styleSrc: ["'self'", 'https:', 'unsafe-inline'],
-      upgradeInsecureRequests: []
+      fontSrc: ["'self'", 'https:', 'http:', 'data:'],
+      scriptSrc: ["'self'", 'https:', 'http:', 'blob:'],
+      styleSrc: ["'self'", 'https:', 'http:', "'unsafe-inline'"]
     }
   })
 );

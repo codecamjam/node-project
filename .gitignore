@@ -3,3 +3,5 @@ build
 npm-debug.log
 config.env
 .DS_Store
+.cache
+bundle.js.map

@@ -19,7 +19,7 @@ const createSendToken = (user, statusCode, res) => {
       Date.now() +
         process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
     ),
-    httpOnly: true
+    httpOnly: true //cant manipulate cookie in browser in any way
   };
   if (process.env.NODE_ENV === 'production') {
     cookieOptions.secure = true;
@@ -208,26 +208,34 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   createSendToken(user, 200, res);
 });
 
-//only for rendered pages so no errors!
-exports.isLoggedIn = catchAsync(async (req, res, next) => {
+//need to remove catch async to avoid the global error handler for when user logs out
+//so catch error locally and call next instead
+exports.isLoggedIn = async (req, res, next) => {
   if (req.cookies.jwt) {
-    //verify token
-    const decoded = await promisify(jwt.verify)(
-      req.cookies.jwt,
-      process.env.JWT_SECRET
-    );
-    //check if user still exists
-    const currentUser = await User.findById(decoded.id);
-    if (!currentUser) return next();
-    //check if user changed paw after token was issued
-    if (currentUser.changedPasswordAfter(decoded.iat))
-      return next();
+    try {
+      const decoded = await promisify(jwt.verify)(
+        req.cookies.jwt,
+        process.env.JWT_SECRET
+      );
+      const currentUser = await User.findById(decoded.id);
+      if (!currentUser) return next();
+      if (currentUser.changedPasswordAfter(decoded.iat))
+        return next();
 
-    //THERE IS A LOGGED IN USER
-    //so make it accessible to our template
-    res.locals.user = currentUser;
-    return next(); //return next to ensure next is only called once
+      res.locals.user = currentUser;
+      return next();
+    } catch (err) {
+      return next();
+    }
   }
-  //in case no cookie/no logged in user, call the next middleware
   next();
-});
+};
+
+exports.logout = (req, res) => {
+  res.cookie('jwt', 'loggedout', {
+    expires: new Date(Date.now(+10 * 1000)),
+    httpOnly: true
+  });
+
+  res.status(200).json({ status: 'success' });
+};

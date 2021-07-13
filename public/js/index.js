@@ -1,6 +1,6 @@
 /* eslint-disable */
 import '@babel/polyfill';
-import { displayMap } from 'mapbox';
+import { displayMap } from './mapbox';
 import { login, logout } from './login';
 
 //DOM ELEMENTS
@@ -10,8 +10,8 @@ const loginForm = document.querySelector('.login-form');
 const logOutBtn = document.querySelector('.nav__el--logout');
 
 //DELEGATION
-if (mapBox && stuff) {
-  const locations = JSON.parse(dataset.locations);
+if (mapBox && mapStuff) {
+  const locations = JSON.parse(mapBox.dataset.locations);
   const stuff = mapStuff.dataset.stuff.split(' ');
   const token = stuff[0];
   const styles = stuff[1];

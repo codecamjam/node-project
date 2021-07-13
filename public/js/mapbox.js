@@ -13,7 +13,7 @@
 // console.log(locations);
 
 export const displayMap = (locations, token, styles) => {
-  mapboxgl.accessToken = token; //this wont actually work
+  mapboxgl.accessToken = token;
   var map = new mapboxgl.Map({
     container: 'map',
     style: styles,

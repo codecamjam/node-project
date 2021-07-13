@@ -50,6 +50,10 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 app.use(express.json({ limit: '10kb' }));
+//remember the way a form sends data to the server
+//is url encoded so we need this mw to parse url
+//encoded form (the edit user settings top form in account page)
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
 
 app.use(mongoSanitize());

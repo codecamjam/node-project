@@ -21,10 +21,7 @@ const handleJWTError = () =>
   new AppError('Invalid token. Please log in again', 401);
 
 const handleJWTExpiredError = () =>
-  new AppError(
-    'Your token has expired! Please log in again.',
-    401
-  );
+  new AppError('Your token has expired! Please log in again.', 401);
 
 const sendErrorDev = (err, req, res) => {
   //the entire url without the host so it looks like the route
@@ -69,7 +66,6 @@ const sendErrorProd = (err, req, res) => {
 
   //B FOR RENDERED WEBSITE
   if (err.isOperational) {
-    console.log(err);
     return res.status(err.statusCode).render('error', {
       title: 'Something went wrong!',
       msg: err.message
@@ -96,17 +92,14 @@ module.exports = (err, req, res, next) => {
   } else if (process.env.NODE_ENV === 'production') {
     let error = Object.create(err);
 
-    if (error.name === 'CastError')
-      error = handleCastErrorDB(error);
+    if (error.name === 'CastError') error = handleCastErrorDB(error);
 
-    if (error.code === 11000)
-      error = handleDuplicateFieldsDB(error);
+    if (error.code === 11000) error = handleDuplicateFieldsDB(error);
 
     if (error.name === 'ValidationError')
       error = handleValidationErrorDB(error);
 
-    if (error.name === 'JsonWebTokenError')
-      error = handleJWTError();
+    if (error.name === 'JsonWebTokenError') error = handleJWTError();
 
     if (error.name === 'TokenExpiredError')
       error = handleJWTExpiredError();

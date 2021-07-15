@@ -31,8 +31,7 @@ const tourSchema = new mongoose.Schema(
       required: [true, 'A tour must have a difficulty'],
       enum: {
         values: ['easy', 'medium', 'difficult'],
-        message:
-          'Difficulty is either easy, medium, or difficult'
+        message: 'Difficulty is either easy, medium, or difficult'
       }
     },
     ratingsAverage: {
@@ -57,8 +56,7 @@ const tourSchema = new mongoose.Schema(
           return val < this.price;
         }
       },
-      message:
-        'Discount price ({VALUE}) should be below regular price'
+      message: 'Discount price ({VALUE}) should be below regular price'
     },
     summary: {
       type: String,
@@ -153,20 +151,15 @@ tourSchema.pre(/^find/, function(next) {
   next();
 });
 
-tourSchema.post(/^find/, function(docs, next) {
-  console.log(
-    `Query took ${Date.now() - this.start} milliseconds`
-  );
-  next();
-});
+// tourSchema.post(/^find/, function(docs, next) {
+//   console.log(
+//     `Query took ${Date.now() - this.start} milliseconds`
+//   );
+//   next();
+// });
 
 tourSchema.pre('aggregate', function(next) {
-  if (
-    !(
-      this.pipeline().length > 0 &&
-      '$geoNear' in this.pipeline()[0]
-    )
-  ) {
+  if (!(this.pipeline().length > 0 && '$geoNear' in this.pipeline()[0])) {
     this.pipeline().unshift({
       $match: { secretTour: { $ne: true } }
     });

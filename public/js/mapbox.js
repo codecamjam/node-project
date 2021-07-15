@@ -10,8 +10,6 @@
 // const TOKEN = stuff[0];
 // const STYLES = stuff[1];
 
-// console.log(locations);
-
 export const displayMap = (locations, token, styles) => {
   mapboxgl.accessToken = token;
   var map = new mapboxgl.Map({

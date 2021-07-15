@@ -1,7 +1,7 @@
 node_modules
 build
 npm-debug.log
-config.env
+*.env
 .DS_Store
 .cache
 bundle.js.map
